@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FDFBF7;
+  --foreground: #2C2C2C;
+  --color-japandi-bg: #FDFBF7;
+  --color-japandi-text: #2C2C2C;
+  --color-japandi-accent: #D4A373;
+  --color-japandi-sage: #8A9A86;
+  --color-japandi-wood: #A68A64;
+  --color-japandi-border: #E5E7EB;
+  --color-japandi-card: #F5F2EA;
+  --color-japandi-muted: #6B7280;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1A1A1A;
+    --foreground: #EBEBEB;
+    --color-japandi-bg: #1A1A1A;
+    --color-japandi-text: #EBEBEB;
+    --color-japandi-accent: #D4A373;
+    --color-japandi-sage: #8A9A86;
+    --color-japandi-wood: #A68A64;
+    --color-japandi-border: #333333;
+    --color-japandi-card: #242424;
+    --color-japandi-muted: #888888;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), Arial, sans-serif;
+}
