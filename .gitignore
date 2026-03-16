@@ -9,3 +9,22 @@ wheels/
 # Virtual environments
 .venv
 .env
+
+# Database files (all types)
+*.db
+*.sqlite
+*.sqlite3
+*.sqlitedb
+*.db-journal
+*.db-shm
+*.db-wal
+data/
+db/
+*.dump
+backups/
+
+#workspaces
+.code-workspace
+
+# ai agents
+.gemini*

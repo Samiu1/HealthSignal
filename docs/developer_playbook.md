@@ -11,7 +11,7 @@
     ```env
     GARMIN_EMAIL="your@email.com"
     GARMIN_PASSWORD="yourpassword"
-    ANTHROPIC_API_KEY="sk-ant-..."
+    DEEPSEEK_API_KEY="sk-..."
     ```
 3.  **Run Pipeline**:
     ```bash
@@ -19,8 +19,6 @@
     ```
 4.  **View UI**:
     ```bash
-    streamlit run src/app.py  # Python internal view
-    # OR
     cd web && npm run dev     # Polished Next.js view
     ```
 
@@ -55,4 +53,4 @@
 
 ## Troubleshooting
 - **Garmin 403**: Usually means MFA is required. The library should prompt for a code on the first run, or check if `TOKEN_DIR` has valid tokens.
-- **LLM Output Mismatch**: If Claude starts returning weird JSON, check `src/graph/nodes/health_analysis.py` and update the `HealthAnalysisSchema` or the system prompt.
+- **LLM Output Mismatch**: If DeepSeek starts returning weird JSON, check `src/graph/nodes/health_analysis.py` and update the `HealthAnalysisSchema` or the system prompt.

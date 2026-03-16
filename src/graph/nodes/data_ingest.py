@@ -88,8 +88,36 @@ def fetch_garmin_data(garmin: Garmin, target_date: datetime) -> Dict[str, Any]:
         logger.info(f"Fetching Training Readiness for {date_str}...")
         data['readiness'] = garmin.get_training_readiness(date_str) or {}
     except Exception as e:
-        logger.debug(f"Failed to fetch training readiness (normal if device lacks support): {e}")
+        logger.debug(f"Failed to fetch training readiness: {e}")
         data['readiness'] = {}
+
+    try:
+        logger.info(f"Fetching Respiration Data for {date_str}...")
+        data['respiration'] = garmin.get_respiration_data(date_str) or {}
+    except Exception as e:
+        logger.debug(f"Failed to fetch respiration: {e}")
+        data['respiration'] = {}
+
+    try:
+        logger.info(f"Fetching SpO2 Data for {date_str}...")
+        data['spo2'] = garmin.get_spo2_data(date_str) or {}
+    except Exception as e:
+        logger.debug(f"Failed to fetch SpO2: {e}")
+        data['spo2'] = {}
+
+    try:
+        logger.info(f"Fetching HRV Data for {date_str}...")
+        data['hrv'] = garmin.get_hrv_data(date_str) or {}
+    except Exception as e:
+        logger.debug(f"Failed to fetch HRV: {e}")
+        data['hrv'] = {}
+
+    try:
+        logger.info(f"Fetching Max Metrics (VO2 Max) for {date_str}...")
+        data['max_metrics'] = garmin.get_max_metrics(date_str) or []
+    except Exception as e:
+        logger.debug(f"Failed to fetch max metrics: {e}")
+        data['max_metrics'] = []
 
     return data
 
@@ -102,7 +130,13 @@ def get_mock_data() -> Dict[str, Any]:
             active_calories=640,
             stress_level=35,
             body_battery_high=95,
-            body_battery_low=20
+            body_battery_low=20,
+            body_battery_charge=75,
+            body_battery_drain=70,
+            respiration_bpm=14.5,
+            spo2_percent=98.0,
+            hrv_avg_ms=65.0,
+            vo2_max=48
         ),
         "sleep_metrics": SleepMetrics(
             duration_hours=7.5,
@@ -138,12 +172,31 @@ def process_garmin_data(raw_data: Dict[str, Any]) -> Dict[str, Any]:
 
     # Process daily stats
     # Different fields exist in Garmin response, capturing standard ones
+    # Process DAILY metrics
     steps = stats.get('totalSteps', 0)
     resting_hr = stats.get('restingHeartRate', 0)
     active_calories = stats.get('activeKilocalories', 0)
     stress_level = stats.get('averageStressLevel', 0) 
     bb_high = stats.get('bodyBatteryHighestValue', 0)
     bb_low = stats.get('bodyBatteryLowestValue', 0)
+    bb_charge = stats.get('bodyBatteryChargeValue', 0)
+    bb_drain = stats.get('bodyBatteryDrainValue', 0)
+
+    # Expanded metrics
+    respiration = raw_data.get('respiration', {})
+    spo2 = raw_data.get('spo2', {})
+    hrv = raw_data.get('hrv', {})
+    max_metrics = raw_data.get('max_metrics', [])
+
+    resp_bpm = respiration.get('avgWakingRespiration') or respiration.get('avgRespiration')
+    spo2_val = spo2.get('averageSpo2') or spo2.get('avgSpo2')
+    hrv_val = hrv.get('lastNightAvg') or hrv.get('weeklyAvg')
+    
+    vo2_max_val = None
+    if isinstance(max_metrics, list):
+        for m in max_metrics:
+            if m.get('vo2Max') and m.get('genericValue'):
+                vo2_max_val = m.get('genericValue')
 
     daily_metrics = DailyMetrics(
         steps=steps if steps is not None else 0,
@@ -151,7 +204,13 @@ def process_garmin_data(raw_data: Dict[str, Any]) -> Dict[str, Any]:
         active_calories=active_calories if active_calories is not None else 0,
         stress_level=stress_level if stress_level is not None else 0,
         body_battery_high=bb_high if bb_high is not None else 0,
-        body_battery_low=bb_low if bb_low is not None else 0
+        body_battery_low=bb_low if bb_low is not None else 0,
+        body_battery_charge=bb_charge if bb_charge is not None else 0,
+        body_battery_drain=bb_drain if bb_drain is not None else 0,
+        respiration_bpm=resp_bpm,
+        spo2_percent=spo2_val,
+        hrv_avg_ms=hrv_val,
+        vo2_max=vo2_max_val
     )
     
     # Process sleep

@@ -8,6 +8,12 @@ class DailyMetrics(BaseModel):
     stress_level: int = 0
     body_battery_high: int = 0
     body_battery_low: int = 0
+    body_battery_charge: int = 0
+    body_battery_drain: int = 0
+    respiration_bpm: Optional[float] = None
+    spo2_percent: Optional[float] = None
+    hrv_avg_ms: Optional[float] = None
+    vo2_max: Optional[int] = None
 
 class SleepMetrics(BaseModel):
     duration_hours: float = 0.0
@@ -37,4 +43,11 @@ class HealthState(TypedDict):
     activity_metrics: List[ActivityMetrics]
     readiness_metrics: Optional[ReadinessMetrics]
     raw_garmin_data: Dict[str, Any]
+    
+    # Agent Scratchpads
+    sleep_analysis: str
+    performance_analysis: str
+    stress_analysis: str
+    
+    # Final Structured Output
     analysis: Dict[str, Any]

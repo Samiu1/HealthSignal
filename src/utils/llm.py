@@ -1,10 +1,11 @@
 import os
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 
-def get_llm(model_name: str = "claude-3-haiku-20240307", temperature: float = 0.2) -> ChatAnthropic:
-    """Returns an instance of ChatAnthropic."""
-    return ChatAnthropic(
-        model_name=model_name,
+def get_llm(model_name: str = "deepseek-reasoner", temperature: float = 0.2) -> ChatOpenAI:
+    """Returns an instance of ChatOpenAI configured for DeepSeek."""
+    return ChatOpenAI(
+        model=model_name,
         temperature=temperature,
-        max_tokens=2048,
+        base_url="https://api.deepseek.com",
+        api_key=os.getenv("DEEPSEEK_API_KEY"),
     )
