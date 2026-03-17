@@ -30,8 +30,8 @@ COPY . .
 
 # Copy built standalone and static assets from stage 1
 COPY --from=frontend-builder /app/web/.next/standalone /app/web/standalone
-COPY --from=frontend-builder /app/web/.next/static /app/web/standalone/web/.next/static
-COPY --from=frontend-builder /app/web/public /app/web/standalone/web/public
+COPY --from=frontend-builder /app/web/.next/static /app/web/standalone/.next/static
+COPY --from=frontend-builder /app/web/public /app/web/standalone/public
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -43,4 +43,4 @@ EXPOSE 3000
 
 # Command to run both the sync script and the web server
 # We use node directly on the standalone server.js
-CMD ["sh", "-c", "uv run main.py & cd web/standalone/web && node server.js"]
+CMD ["sh", "-c", "uv run main.py & cd web/standalone && node server.js"]
