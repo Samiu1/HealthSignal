@@ -5,7 +5,10 @@ import os
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "health_data.db")
+DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "health_data.db"))
+
+# Ensure the database directory exists
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 def init_db():
     """Initialize the SQLite database schema."""

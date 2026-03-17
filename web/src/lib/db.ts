@@ -3,9 +3,9 @@ import path from 'path';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// The database is located at ../src/health_data.db relative to the web directory.
-// When running in dev, process.cwd() is the web folder.
-const dbPath = path.resolve(process.cwd(), '../src/health_data.db');
+// If DB_PATH is explicitly set in env (e.g., in Docker), use it.
+// Otherwise, default to ../data/health_data.db relative to the web directory.
+const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), '../data/health_data.db');
 
 let db: ReturnType<typeof Database> | null = null;
 
