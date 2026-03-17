@@ -1,5 +1,5 @@
 # Use Node.js for building the frontend
-FROM node:20-slim AS frontend-builder
+FROM node:24-slim AS frontend-builder
 WORKDIR /app/web
 COPY web/package*.json ./
 RUN npm install
@@ -9,11 +9,11 @@ RUN npm run build
 # Final stage: Python with Node.js support
 FROM python:3.12-slim
 
-# Install system dependencies
+# Install system dependencies and Node.js 24
 RUN apt-get update && apt-get install -y \
     curl \
-    nodejs \
-    npm \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv for Python package management

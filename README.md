@@ -81,7 +81,7 @@ Follow these steps to set up both the backend data pipeline and the frontend web
 
 - [Python 3.12+](https://www.python.org/downloads/)
 - [uv](https://github.com/astral-sh/uv) (for ultra-fast Python package management)
-- [Node.js 20+](https://nodejs.org/en/)
+- [Node.js 24+](https://nodejs.org/en/)
 - [pnpm](https://pnpm.io/) or `npm`
 - DeepSeek API Key (for the AI analysis)
 - Garmin Connect Account (Optional, falls back to mock data if omitted)

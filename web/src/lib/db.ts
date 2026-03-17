@@ -5,7 +5,7 @@ import path from 'path';
 
 // If DB_PATH is explicitly set in env (e.g., in Docker), use it.
 // Otherwise, default to ../data/health_data.db relative to the web directory.
-const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), '../data/health_data.db');
+const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), '../src/health_data.db');
 
 let db: ReturnType<typeof Database> | null = null;
 
