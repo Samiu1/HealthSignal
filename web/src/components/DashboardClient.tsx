@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, cloneElement, useState } from "react";
+import React, { useMemo, cloneElement, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from 'react-markdown';
 import {
@@ -33,6 +33,9 @@ import {
   Settings,
   X,
   RefreshCw,
+  Mail,
+  Lock,
+  Key,
 } from "lucide-react";
 import { HealthMetric, AiInsight, AiExpertInsight } from "@/lib/db";
 import { MOCK_METRICS, MOCK_INSIGHTS } from "@/lib/mockData";
@@ -43,6 +46,7 @@ interface DashboardClientProps {
 }
 
 type TabType = "overview" | "analysis" | "trends";
+type GarminLoginState = "initial" | "login" | "mfa";
 
 export default function DashboardClient({
   metrics: initialMetrics,
@@ -55,6 +59,16 @@ export default function DashboardClient({
   const [showSettings, setShowSettings] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authenticatedEmail, setAuthenticatedEmail] = useState<string | null>(null);
+
+  // Garmin Login State
+  const [garminLoginState, setGarminLoginState] = useState<GarminLoginState>("initial");
+  const [garminEmail, setGarminEmail] = useState("");
+  const [garminPassword, setGarminPassword] = useState("");
+  const [garminMfaCode, setGarminMfaCode] = useState("");
+  const [isGarminLoggingIn, setIsGarminLoggingIn] = useState(false);
+  const [garminLoginError, setGarminLoginError] = useState<string | null>(null);
 
   // Use 7-day window for charts
   const chartData = useMemo(() => [...metrics].slice(0, 7).reverse(), [metrics]);
@@ -66,6 +80,62 @@ export default function DashboardClient({
     setMetrics(MOCK_METRICS);
     setInsights(MOCK_INSIGHTS);
     setIsDemo(true);
+  };
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/garmin/status');
+        const data = await response.json();
+        if (data.success && data.authenticated) {
+          setIsAuthenticated(true);
+          setAuthenticatedEmail(data.email || "Authenticated");
+        }
+      } catch (err) {
+        console.error("Failed to check Garmin status:", err);
+      }
+    };
+    checkStatus();
+  }, []);
+
+  const handleGarminLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsGarminLoggingIn(true);
+    setGarminLoginError(null);
+
+    try {
+      const response = await fetch('/api/auth/garmin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: garminEmail,
+          password: garminPassword,
+          mfaCode: garminMfaCode || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setGarminLoginState("initial");
+        setGarminEmail("");
+        setGarminPassword("");
+        setGarminMfaCode("");
+        setIsAuthenticated(true);
+        setAuthenticatedEmail(garminEmail || "Connected");
+        // After successful login, trigger a sync
+        syncGarminData();
+      } else if (data.mfa_required) {
+        setGarminLoginState("mfa");
+        setGarminLoginError(null);
+      } else {
+        setGarminLoginError(data.error || "Authentication failed");
+      }
+    } catch (err) {
+      setGarminLoginError("Network error occurred");
+    } finally {
+      setIsGarminLoggingIn(false);
+    }
   };
 
   const syncGarminData = async () => {
@@ -180,27 +250,137 @@ export default function DashboardClient({
                         <div className="space-y-4">
                           {!isDemo ? (
                             <div className="space-y-4">
-                              <p className="text-[10px] font-bold text-[var(--color-theme-muted)] leading-relaxed italic opacity-70">
-                                Experience the complete insight dashboard by populating simulated biometric data streams or syncing from Garmin.
-                              </p>
-                              
-                              <button
-                                onClick={syncGarminData}
-                                disabled={isSyncing}
-                                className="w-full neu-convex px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-theme-secondary)] hover:neu-convex-active transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
-                                aria-label={isSyncing ? "Syncing metrics" : "Sync metrics from Garmin"}
-                                aria-busy={isSyncing}
-                              >
-                                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} aria-hidden="true" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">
-                                  {isSyncing ? 'Syncing...' : 'Sync Metric'}
-                                </span>
-                              </button>
+                              {garminLoginState === "initial" && (
+                                <>
+                                  <p className="text-[10px] font-bold text-[var(--color-theme-muted)] leading-relaxed italic opacity-70">
+                                    Experience the complete insight dashboard by populating simulated biometric data streams or syncing from Garmin.
+                                  </p>
+                                  
+                                  <button
+                                    onClick={() => setGarminLoginState("login")}
+                                    className="w-full neu-convex px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-theme-secondary)] hover:neu-convex-active transition-all duration-300 flex items-center justify-center gap-2"
+                                  >
+                                    <Activity className="w-3 h-3" />
+                                    <span>Connect Garmin</span>
+                                  </button>
 
-                              {syncError && (
-                                <p className="text-[8px] font-bold text-red-600 italic px-2" role="alert">
-                                  Error: {syncError}
-                                </p>
+                                  <button
+                                    onClick={syncGarminData}
+                                    disabled={isSyncing}
+                                    className="w-full neu-convex px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-theme-secondary)] hover:neu-convex-active transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+                                    aria-label={isSyncing ? "Syncing metrics" : "Sync metrics from Garmin"}
+                                    aria-busy={isSyncing}
+                                  >
+                                    <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} aria-hidden="true" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                      {isSyncing ? 'Syncing...' : (isAuthenticated ? 'Sync Health Data' : 'Sync Metric')}
+                                    </span>
+                                  </button>
+                                  
+                                  {isAuthenticated && (
+                                    <div className="flex flex-col items-center gap-1 opacity-60">
+                                      <p className="text-[8px] font-bold text-[var(--color-theme-secondary)] italic">
+                                        Connected as {authenticatedEmail}
+                                      </p>
+                                      <button 
+                                        onClick={() => setGarminLoginState("login")}
+                                        className="text-[7px] font-black uppercase tracking-widest underline hover:text-[var(--color-theme-primary)]"
+                                      >
+                                        Switch Account
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {syncError && (
+                                    <p className="text-[8px] font-bold text-red-600 italic px-2" role="alert">
+                                      Error: {syncError}
+                                    </p>
+                                  )}
+                                </>
+                              )}
+
+                              {garminLoginState === "login" && (
+                                <form onSubmit={handleGarminLogin} className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-300">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl neu-convex-active border border-white/10">
+                                      <Mail className="w-3 h-3 text-[var(--color-theme-muted)]" />
+                                      <input 
+                                        type="email" 
+                                        placeholder="Garmin Email"
+                                        value={garminEmail}
+                                        onChange={(e) => setGarminEmail(e.target.value)}
+                                        className="bg-transparent text-[10px] w-full focus:outline-none font-bold"
+                                        required
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl neu-convex-active border border-white/10">
+                                      <Lock className="w-3 h-3 text-[var(--color-theme-muted)]" />
+                                      <input 
+                                        type="password" 
+                                        placeholder="Password"
+                                        value={garminPassword}
+                                        onChange={(e) => setGarminPassword(e.target.value)}
+                                        className="bg-transparent text-[10px] w-full focus:outline-none font-bold"
+                                        required
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {garminLoginError && (
+                                    <p className="text-[8px] font-bold text-red-500 italic px-1">{garminLoginError}</p>
+                                  )}
+
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setGarminLoginState("initial")}
+                                      className="flex-1 neu-convex py-3 rounded-xl text-[8px] font-black uppercase tracking-widest opacity-60 hover:opacity-100"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      disabled={isGarminLoggingIn}
+                                      className="flex-[2] neu-convex py-3 rounded-xl text-[8px] font-black uppercase tracking-widest text-[var(--color-theme-primary)] disabled:opacity-50"
+                                    >
+                                      {isGarminLoggingIn ? 'Connecting...' : 'Login'}
+                                    </button>
+                                  </div>
+                                </form>
+                              )}
+
+                              {garminLoginState === "mfa" && (
+                                <form onSubmit={handleGarminLogin} className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-300">
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-[var(--color-theme-muted)] italic text-center mb-2">
+                                      Enter the code sent to your email
+                                    </p>
+                                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl neu-convex-active border border-white/10">
+                                      <Key className="w-3 h-3 text-[var(--color-theme-primary)] scale-110" />
+                                      <input 
+                                        type="text" 
+                                        placeholder="MFA Code (e.g. 123456)"
+                                        value={garminMfaCode}
+                                        onChange={(e) => setGarminMfaCode(e.target.value)}
+                                        className="bg-transparent text-[10px] w-full focus:outline-none font-black tracking-[0.5em] text-center"
+                                        required
+                                        autoFocus
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {garminLoginError && (
+                                    <p className="text-[8px] font-bold text-red-500 italic px-1">{garminLoginError}</p>
+                                  )}
+
+                                  <button
+                                    type="submit"
+                                    disabled={isGarminLoggingIn}
+                                    className="w-full neu-convex py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[var(--color-theme-secondary)] hover:neu-convex-active disabled:opacity-50 transition-all"
+                                  >
+                                    {isGarminLoggingIn ? 'Verifying...' : 'Verify Code'}
+                                  </button>
+                                </form>
                               )}
 
                               <button
