@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // The database is located at ../src/health_data.db relative to the web directory.
 // When running in dev, process.cwd() is the web folder.
 const dbPath = path.resolve(process.cwd(), '../src/health_data.db');
@@ -55,7 +57,7 @@ export function getHealthMetrics(): HealthMetric[] {
     try {
       if (row.daily_metrics) dailyMetrics = JSON.parse(row.daily_metrics);
       if (row.sleep_metrics) sleepMetrics = JSON.parse(row.sleep_metrics);
-    } catch(e) {}
+    } catch {}
     
     return {
       id: row.id,

@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, cloneElement, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from 'react-markdown';
