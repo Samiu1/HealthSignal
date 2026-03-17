@@ -83,6 +83,12 @@ export default function DashboardClient({
     setIsDemo(true);
   };
 
+  const loadLiveData = () => {
+    setMetrics(initialMetrics);
+    setInsights(initialInsights);
+    setIsDemo(false);
+  };
+
   useEffect(() => {
     const checkStatus = async () => {
       try {
@@ -384,22 +390,45 @@ export default function DashboardClient({
                                 </form>
                               )}
 
-                              <button
-                                onClick={() => {
-                                  loadDemoData();
-                                  setShowSettings(false);
-                                }}
-                                className="w-full neu-convex px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-theme-primary)] hover:neu-convex-active transition-all duration-300"
-                              >
-                                Sync Mock Data
-                              </button>
+                              {isDemo ? (
+                                <button
+                                  onClick={() => {
+                                    loadLiveData();
+                                    setShowSettings(false);
+                                  }}
+                                  className="w-full neu-convex px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-theme-secondary)] hover:neu-convex-active transition-all duration-300 border border-[var(--color-theme-secondary)]/20"
+                                >
+                                  Load Live Data
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    loadDemoData();
+                                    setShowSettings(false);
+                                  }}
+                                  className="w-full neu-convex px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-theme-primary)] hover:neu-convex-active transition-all duration-300"
+                                >
+                                  Sync Mock Data
+                                </button>
+                              )}
                             </div>
                           ) : (
-                            <div className="flex items-center gap-3 p-4 rounded-2xl neu-convex-active">
-                              <div className="w-2 h-2 rounded-full bg-[var(--color-theme-primary)] animate-pulse" />
-                              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-theme-primary)] opacity-90">
-                                Demo Active
-                              </span>
+                            <div className="flex flex-col gap-4 p-4 rounded-2xl neu-convex-active">
+                              <div className="flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-[var(--color-theme-primary)] animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-theme-primary)] opacity-90">
+                                  Demo Active
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  loadLiveData();
+                                  setShowSettings(false);
+                                }}
+                                className="w-full neu-convex px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest text-[var(--color-theme-secondary)] hover:neu-convex-active transition-all duration-300"
+                              >
+                                Switch to Live Data
+                              </button>
                             </div>
                           )}
                         </div>
@@ -634,8 +663,8 @@ export default function DashboardClient({
                             transition={{ delay: 0.1 * i }}
                             className="flex gap-5 group cursor-default"
                           >
-                            <div className="mt-2 w-2 h-2 rounded-full bg-[var(--color-theme-secondary)] neu-convex shadow-[0_0_15px_rgba(var(--color-theme-secondary-rgb),0.5)]" />
-                            <span className="text-md text-[var(--color-theme-text)]/90 font-bold group-hover:text-[var(--color-theme-primary)] transition-colors">{rec}</span>
+                            <div className="mt-2 w-2 h-2 rounded-full shrink-0 bg-[var(--color-theme-secondary)] neu-convex shadow-[0_0_15px_rgba(var(--color-theme-secondary-rgb),0.5)]" />
+                            <span className="text-md text-[var(--color-theme-text)]/90 font-bold group-hover:text-[var(--color-theme-primary)] transition-colors">{rec.replace(/^[-•*]\s*/, '')}</span>
                           </motion.li>
                         ))}
                       </ul>
@@ -754,32 +783,32 @@ export default function DashboardClient({
       </div>
 
       {/* PERSISTENT TAB NAVIGATION */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
-        <nav className="neu-flat rounded-full p-2 flex items-center gap-2 backdrop-blur-xl border border-white/20 shadow-2xl">
+      <div className="fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-fit">
+        <nav className="neu-flat rounded-full p-1.5 md:p-2 flex items-center justify-between gap-1 md:gap-2 backdrop-blur-xl border border-white/20 shadow-2xl whitespace-nowrap overflow-x-auto no-scrollbar">
           <TabButton 
             active={activeTab === "overview"} 
             onClick={() => setActiveTab("overview")}
-            icon={<LayoutDashboard className="w-5 h-5" />}
+            icon={<LayoutDashboard className="w-5 h-5 sm:w-5 sm:h-5" />}
             label="Home"
           />
           <TabButton 
             active={activeTab === "analysis"} 
             onClick={() => setActiveTab("analysis")}
-            icon={<Search className="w-5 h-5" />}
+            icon={<Search className="w-5 h-5 sm:w-5 sm:h-5" />}
             label="Analysis"
           />
           <TabButton 
             active={activeTab === "trends"} 
             onClick={() => setActiveTab("trends")}
-            icon={<LineChart className="w-5 h-5" aria-hidden="true" />}
+            icon={<LineChart className="w-5 h-5 sm:w-5 sm:h-5" aria-hidden="true" />}
             label="Signals"
           />
-          <div className="w-px h-6 bg-[var(--neu-border)] mx-2" />
+          <div className="hidden sm:block w-px h-6 bg-[var(--neu-border)] mx-1 md:mx-2" />
           <button 
             aria-label="Send Message"
-            className="neu-convex p-3 rounded-full text-[var(--color-theme-muted)] hover:text-[var(--color-theme-primary)] transition-colors"
+            className="neu-convex p-2 md:p-3 rounded-full text-[var(--color-theme-muted)] hover:text-[var(--color-theme-primary)] transition-colors shrink-0"
           >
-            <MessageSquare className="w-5 h-5" aria-hidden="true" />
+            <MessageSquare className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
           </button>
         </nav>
       </div>
@@ -794,15 +823,15 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
       aria-label={label}
       aria-pressed={active}
       className={`
-        flex items-center gap-2 px-6 py-3 rounded-full transition-all duration-500 group
+        flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-full transition-all duration-500 group shrink-0
         ${active ? 'neu-convex-active text-[var(--color-theme-primary)]' : 'text-[var(--color-theme-muted)] hover:text-[var(--color-theme-text)]'}
       `}
       aria-current={active ? "page" : undefined}
     >
-      <div className={`${active ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-500`}>
+      <div className={`${active ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-500 flex shrink-0`}>
         {cloneElement(icon as React.ReactElement<{ 'aria-hidden'?: boolean }>, { 'aria-hidden': true })}
       </div>
-      <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${active ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'} transition-opacity duration-500`}>
+      <span className={`text-[9px] md:text-[10px] sm:inline font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] ${active ? 'opacity-100 block' : 'opacity-80 group-hover:opacity-100 hidden sm:block'} transition-opacity duration-500`}>
         {label}
       </span>
     </button>
@@ -830,16 +859,16 @@ function MetricTile({ label, value, unit, icon, color, delay }: {
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
       
-      <div className="flex justify-between items-start mb-8 relative z-10">
-        <div className={`neu-convex p-4 rounded-2xl ${color} group-hover:scale-110 transition-transform duration-700`}>
-          {cloneElement(icon as React.ReactElement<{ 'aria-hidden'?: boolean }>, { 'aria-hidden': true })}
+      <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
+        <div className={`neu-convex p-3 md:p-4 rounded-2xl ${color} group-hover:scale-110 transition-transform duration-700`}>
+          {cloneElement(icon as React.ReactElement<{ 'aria-hidden'?: boolean, className?: string }>, { 'aria-hidden': true, className: "w-5 h-5 md:w-6 md:h-6" })}
         </div>
-        <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--color-theme-secondary)]">{label}</div>
+        <div className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[var(--color-theme-secondary)]">{label}</div>
       </div>
       
-      <div className="flex items-baseline gap-2 relative z-10">
-        <span className="text-5xl font-black tracking-tighter text-[var(--color-theme-text)] italic">{value}</span>
-        <span className="text-md text-[var(--color-theme-secondary)] font-black uppercase tracking-widest">{unit}</span>
+      <div className="flex items-baseline gap-1 md:gap-2 relative z-10">
+        <span className="text-4xl md:text-5xl font-black tracking-tighter text-[var(--color-theme-text)] italic">{value}</span>
+        <span className="text-xs md:text-md text-[var(--color-theme-secondary)] font-black uppercase tracking-widest">{unit}</span>
       </div>
       
       <div className="mt-10 h-1.5 w-full bg-[var(--neu-shadow-light)] rounded-full overflow-hidden relative z-10">
@@ -890,17 +919,17 @@ function ExpertCard({ expert, delay }: { expert: AiExpertInsight; delay: number 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay, ease: "circOut" }}
       whileHover={{ y: -10 }}
-      className="neu-flat rounded-[50px] p-10 group transition-all duration-700 relative overflow-hidden flex flex-col h-full"
+      className="neu-flat rounded-[30px] md:rounded-[50px] p-6 md:p-10 group transition-all duration-700 relative overflow-hidden flex flex-col h-full"
     >
       <div className="absolute -right-10 -top-10 w-40 h-40 blur-[80px] opacity-10 bg-[var(--color-theme-primary)] group-hover:opacity-20 transition-opacity" />
       
-      <div className="flex items-center gap-6 mb-10 relative z-10">
-        <div className="neu-convex p-4 rounded-2xl group-hover:scale-110 transition-transform duration-700" style={{ color: theme.color }}>
-          {cloneElement(theme.icon as React.ReactElement<{ 'aria-hidden'?: boolean }>, { 'aria-hidden': true })}
+      <div className="flex items-center gap-4 md:gap-6 mb-8 md:mb-10 relative z-10">
+        <div className="neu-convex p-3 md:p-4 rounded-2xl group-hover:scale-110 transition-transform duration-700" style={{ color: theme.color }}>
+          {cloneElement(theme.icon as React.ReactElement<{ 'aria-hidden'?: boolean, className?: string }>, { 'aria-hidden': true, className: "w-5 h-5 md:w-7 md:h-7" })}
         </div>
         <div>
-          <h3 className="text-xl font-black italic text-[var(--color-theme-text)] leading-tight tracking-tight">{expert.expert}</h3>
-          <p className="text-[9px] font-black text-[var(--color-theme-secondary)] uppercase tracking-[0.4em] mt-2 italic">Synthetic Logic</p>
+          <h3 className="text-lg md:text-xl font-black italic text-[var(--color-theme-text)] leading-tight tracking-tight">{expert.expert}</h3>
+          <p className="text-[8px] md:text-[9px] font-black text-[var(--color-theme-secondary)] uppercase tracking-[0.3em] md:tracking-[0.4em] mt-1 md:mt-2 italic">Synthetic Logic</p>
         </div>
       </div>
       
@@ -910,11 +939,11 @@ function ExpertCard({ expert, delay }: { expert: AiExpertInsight; delay: number 
         </div>
       </div>
       
-      <div className="mt-auto space-y-5 relative z-10">
+      <div className="mt-auto space-y-4 md:space-y-5 relative z-10">
         {expert.recommendations.map((rec, i) => (
-          <div key={i} className="flex items-start gap-4 p-5 rounded-[24px] neu-convex-active hover:neu-convex transition-all hover:translate-x-2 duration-500">
-            <div className="mt-2 w-1.5 h-1.5 rounded-full bg-[var(--color-theme-primary)] shadow-[0_0_10px_rgba(var(--color-theme-primary-rgb),0.5)]" />
-            <span className="text-[var(--color-theme-text)] text-xs font-bold leading-relaxed">{rec}</span>
+          <div key={i} className="flex items-start gap-3 md:gap-4 p-4 md:p-5 rounded-[16px] md:rounded-[24px] neu-convex-active hover:neu-convex transition-all hover:translate-x-2 duration-500">
+            <div className="mt-1.5 md:mt-2 w-1.5 h-1.5 rounded-full shrink-0 bg-[var(--color-theme-primary)] shadow-[0_0_10px_rgba(var(--color-theme-primary-rgb),0.5)]" />
+            <span className="text-[var(--color-theme-text)] text-xs font-bold leading-relaxed">{rec.replace(/^[-•*]\s*/, '')}</span>
           </div>
         ))}
       </div>
@@ -924,14 +953,14 @@ function ExpertCard({ expert, delay }: { expert: AiExpertInsight; delay: number 
 
 function TrendsCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="neu-flat rounded-[60px] p-12 h-[500px] flex flex-col group transition-all duration-700 overflow-hidden relative">
+    <div className="neu-flat rounded-[40px] md:rounded-[60px] p-6 md:p-12 min-h-[400px] h-auto flex flex-col group transition-all duration-700 overflow-hidden relative">
       <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[var(--color-theme-secondary)]/5 blur-[120px] rounded-full" />
-      <div className="flex items-center justify-between mb-12 relative z-10">
-        <div className="flex items-center gap-6">
-          <div className="neu-convex p-5 rounded-2xl text-[var(--color-theme-muted)] group-hover:text-[var(--color-theme-primary)] transition-colors duration-500 shadow-xl">
-            {cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-7 h-7' })}
+      <div className="flex items-center justify-between mb-8 md:mb-12 relative z-10">
+        <div className="flex items-center gap-4 md:gap-6">
+          <div className="neu-convex p-3 md:p-5 rounded-2xl text-[var(--color-theme-muted)] group-hover:text-[var(--color-theme-primary)] transition-colors duration-500 shadow-xl">
+            {cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-5 h-5 md:w-7 md:h-7' })}
           </div>
-          <h3 className="text-xl font-black tracking-[0.2em] uppercase italic opacity-80">{title}</h3>
+          <h3 className="text-lg md:text-xl font-black tracking-[0.1em] md:tracking-[0.2em] uppercase italic opacity-80">{title}</h3>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-theme-secondary)] animate-pulse" />

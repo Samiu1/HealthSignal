@@ -43,6 +43,7 @@ class HealthState(TypedDict):
     activity_metrics: List[ActivityMetrics]
     readiness_metrics: Optional[ReadinessMetrics]
     raw_garmin_data: Dict[str, Any]
+    historical_metrics: List[Dict[str, Any]]
     
     # Agent Scratchpads
     sleep_analysis: str

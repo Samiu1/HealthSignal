@@ -11,6 +11,7 @@ from garth.exc import GarthHTTPError
 from dotenv import load_dotenv
 
 from graph.state import HealthState, DailyMetrics, SleepMetrics, ActivityMetrics, ReadinessMetrics
+from utils.db import get_historical_records
 
 logger = logging.getLogger(__name__)
 
@@ -279,8 +280,10 @@ def data_ingest_node(state: HealthState) -> HealthState:
         logger.info(f"Fetching Garmin data for {target_date.strftime('%Y-%m-%d')}")
         raw_data = fetch_garmin_data(garmin, target_date)
         processed_data = process_garmin_data(raw_data)
-        return {**state, **processed_data, "target_date": target_date.strftime('%Y-%m-%d')}
+        historical = get_historical_records(target_date.strftime('%Y-%m-%d'), days=7)
+        return {**state, **processed_data, "historical_metrics": historical, "target_date": target_date.strftime('%Y-%m-%d')}
     else:
         logger.info("Using mock data as Garmin credentials missing or login failed.")
         mock_data = get_mock_data()
-        return {**state, **mock_data, "target_date": target_date.strftime('%Y-%m-%d')}
+        historical = get_historical_records(target_date.strftime('%Y-%m-%d'), days=7)
+        return {**state, **mock_data, "historical_metrics": historical, "target_date": target_date.strftime('%Y-%m-%d')}

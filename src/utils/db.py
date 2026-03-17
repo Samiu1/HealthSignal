@@ -89,11 +89,43 @@ def save_daily_record(date_str: str, state: dict):
                 raw_data=excluded.raw_data
         '''
         
+        def parse_agent_output(output_str):
+            if not output_str:
+                return "", []
+            try:
+                if output_str.startswith("```json"):
+                    output_str = output_str[7:-3]
+                elif output_str.startswith("```"):
+                    output_str = output_str[3:-3]
+                res = json.loads(output_str.strip())
+                return res.get("analysis", ""), res.get("recommendations", [])
+            except Exception:
+                return str(output_str), []
+
+        sleep_ana_raw = state.get("sleep_analysis", "")
+        perf_ana_raw = state.get("performance_analysis", "")
+        stress_ana_raw = state.get("stress_analysis", "")
+
+        sleep_ana, sleep_rec = parse_agent_output(sleep_ana_raw)
+        perf_ana, perf_rec = parse_agent_output(perf_ana_raw)
+        stress_ana, stress_rec = parse_agent_output(stress_ana_raw)
+
         expert_insights_list = [
-            {"expert": "Sleep", "analysis": state.get("sleep_analysis", ""), "recommendations": []},
-            {"expert": "Performance", "analysis": state.get("performance_analysis", ""), "recommendations": []},
-            {"expert": "Stress", "analysis": state.get("stress_analysis", ""), "recommendations": []},
+            {"expert": "Sleep Navigator", "analysis": sleep_ana, "recommendations": sleep_rec},
+            {"expert": "Cardio Guardian", "analysis": perf_ana, "recommendations": perf_rec},
+            {"expert": "Metabolic Sage", "analysis": stress_ana, "recommendations": stress_rec},
         ]
+
+        # Build the synthesis_report as an agent-by-agent narrative hub
+        # (distinct from the executive summary — matches mock data format)
+        synthesis_report_parts = ["#### Agent Synthesis Hub\n"]
+        if sleep_ana:
+            synthesis_report_parts.append(f"The **Sleep Navigator** reports: {sleep_ana}\n")
+        if perf_ana:
+            synthesis_report_parts.append(f"The **Cardio Guardian** reports: {perf_ana}\n")
+        if stress_ana:
+            synthesis_report_parts.append(f"The **Metabolic Sage** reports: {stress_ana}\n")
+        synthesis_report = "\n".join(synthesis_report_parts)
 
         cursor.execute(sql, (
             date_str,
@@ -105,7 +137,7 @@ def save_daily_record(date_str: str, state: dict):
             json.dumps(analysis.get('insights', [])),
             json.dumps(analysis.get('recommendations', [])),
             analysis.get('overall_score'),
-            analysis.get('summary'), # Using summary for synthesis_report for now
+            synthesis_report,
             json.dumps(expert_insights_list),
             analysis.get('overall_score'),
             json.dumps(raw)
@@ -128,7 +160,7 @@ def save_daily_record(date_str: str, state: dict):
             json.dumps(analysis.get('insights', [])),
             json.dumps(analysis.get('recommendations', [])),
             analysis.get('overall_score'),
-            analysis.get('summary'), # Using summary for synthesis_report for now
+            synthesis_report,
             json.dumps(expert_insights_list),
             analysis.get('overall_score'),
             json.dumps(raw)
@@ -139,3 +171,46 @@ def save_daily_record(date_str: str, state: dict):
         logger.info(f"Record for {date_str} successfully saved to DB.")
     except Exception as e:
         logger.error(f"Error saving record to DB: {e}")
+
+def get_historical_records(target_date: str, days: int = 7) -> list:
+    """Fetch the past `days` records ending on `target_date`."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        sql = '''
+            SELECT date, daily_metrics, sleep_metrics, readiness_metrics
+            FROM daily_health
+            WHERE date <= ?
+            ORDER BY date DESC
+            LIMIT ?
+        '''
+        cursor.execute(sql, (target_date, days))
+        rows = cursor.fetchall()
+        
+        history = []
+        for row in rows:
+            record = {"date": row["date"]}
+            if row["daily_metrics"]:
+                try:
+                    record["daily_metrics"] = json.loads(row["daily_metrics"])
+                except Exception:
+                    pass
+            if row["sleep_metrics"]:
+                try:
+                    record["sleep_metrics"] = json.loads(row["sleep_metrics"])
+                except Exception:
+                    pass
+            if row["readiness_metrics"]:
+                try:
+                    record["readiness_metrics"] = json.loads(row["readiness_metrics"])
+                except Exception:
+                    pass
+            history.append(record)
+            
+        conn.close()
+        return history
+    except Exception as e:
+        logger.error(f"Error fetching historical records from DB: {e}")
+        return []
