@@ -799,7 +799,7 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
       aria-current={active ? "page" : undefined}
     >
       <div className={`${active ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-500`}>
-        {cloneElement(icon as React.ReactElement<any>, { 'aria-hidden': true })}
+        {cloneElement(icon as React.ReactElement<{ 'aria-hidden'?: boolean }>, { 'aria-hidden': true })}
       </div>
       <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${active ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'} transition-opacity duration-500`}>
         {label}
@@ -831,7 +831,7 @@ function MetricTile({ label, value, unit, icon, color, delay }: {
       
       <div className="flex justify-between items-start mb-8 relative z-10">
         <div className={`neu-convex p-4 rounded-2xl ${color} group-hover:scale-110 transition-transform duration-700`}>
-          {cloneElement(icon as React.ReactElement<any>, { 'aria-hidden': true })}
+          {cloneElement(icon as React.ReactElement<{ 'aria-hidden'?: boolean }>, { 'aria-hidden': true })}
         </div>
         <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--color-theme-secondary)]">{label}</div>
       </div>
@@ -895,7 +895,7 @@ function ExpertCard({ expert, delay }: { expert: AiExpertInsight; delay: number 
       
       <div className="flex items-center gap-6 mb-10 relative z-10">
         <div className="neu-convex p-4 rounded-2xl group-hover:scale-110 transition-transform duration-700" style={{ color: theme.color }}>
-          {cloneElement(theme.icon as React.ReactElement<any>, { 'aria-hidden': true })}
+          {cloneElement(theme.icon as React.ReactElement<{ 'aria-hidden'?: boolean }>, { 'aria-hidden': true })}
         </div>
         <div>
           <h3 className="text-xl font-black italic text-[var(--color-theme-text)] leading-tight tracking-tight">{expert.expert}</h3>
@@ -928,7 +928,7 @@ function TrendsCard({ title, icon, children }: { title: string; icon: React.Reac
       <div className="flex items-center justify-between mb-12 relative z-10">
         <div className="flex items-center gap-6">
           <div className="neu-convex p-5 rounded-2xl text-[var(--color-theme-muted)] group-hover:text-[var(--color-theme-primary)] transition-colors duration-500 shadow-xl">
-            {cloneElement(icon as any, { className: 'w-7 h-7' })}
+            {cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-7 h-7' })}
           </div>
           <h3 className="text-xl font-black tracking-[0.2em] uppercase italic opacity-80">{title}</h3>
         </div>

@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     console.log(`Executing Garmin auth script: ${command}`);
 
     try {
-      const { stdout, stderr } = await execPromise(command, {
+      const { stdout } = await execPromise(command, {
         cwd: projectRoot,
       });
 
@@ -33,27 +33,29 @@ export async function POST(request: Request) {
       const result = JSON.parse(stdout);
       return NextResponse.json(result);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { code?: number; stdout?: string; stderr?: string; message?: string };
       // Check for MFA required exit code (10)
-      if (error.code === 10) {
+      if (err.code === 10) {
         try {
-            const result = JSON.parse(error.stdout);
+            const result = JSON.parse(err.stdout || '{}');
             return NextResponse.json(result);
-        } catch (e) {
+        } catch {
             return NextResponse.json({ success: false, mfa_required: true, error: 'MFA required' });
         }
       }
 
-      console.error('Auth script error:', error.stderr || error.message);
+      console.error('Auth script error:', err.stderr || err.message);
       try {
-          const result = JSON.parse(error.stdout);
+          const result = JSON.parse(err.stdout || '{}');
           return NextResponse.json(result, { status: 500 });
-      } catch (e) {
-          return NextResponse.json({ success: false, error: error.stderr || error.message }, { status: 500 });
+      } catch {
+          return NextResponse.json({ success: false, error: err.stderr || err.message }, { status: 500 });
       }
     }
-  } catch (error: any) {
-    console.error('Failed to trigger login:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Failed to trigger login:', err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

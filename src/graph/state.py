@@ -1,5 +1,5 @@
 from typing import TypedDict, List, Optional, Any, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 class DailyMetrics(BaseModel):
     steps: int = 0

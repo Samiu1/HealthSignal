@@ -22,12 +22,14 @@ export async function GET() {
       const result = JSON.parse(stdout);
       return NextResponse.json(result);
 
-    } catch (error: any) {
-      console.error('Status script error:', error.stderr || error.message);
+    } catch (error: unknown) {
+      const err = error as { stderr?: string; message?: string };
+      console.error('Status script error:', err.stderr || err.message);
       return NextResponse.json({ success: false, authenticated: false, error: 'Failed to check status' }, { status: 500 });
     }
-  } catch (error: any) {
-    console.error('Failed to trigger status check:', error);
-    return NextResponse.json({ success: false, authenticated: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Failed to trigger status check:', err);
+    return NextResponse.json({ success: false, authenticated: false, error: err.message }, { status: 500 });
   }
 }

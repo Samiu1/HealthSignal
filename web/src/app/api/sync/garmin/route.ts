@@ -32,8 +32,9 @@ export async function POST() {
 
     console.log('Sync script output:', stdout);
     return NextResponse.json({ success: true, message: 'Sync completed successfully', output: stdout });
-  } catch (error: any) {
-    console.error('Failed to trigger sync:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Failed to trigger sync:', err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
