@@ -13,9 +13,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 });
     }
 
-    const projectRoot = path.resolve(process.cwd(), '..');
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(process.cwd(), '..');
     const pythonScript = path.join(projectRoot, 'auth_garmin.py');
-    const venvPython = path.join(projectRoot, '.venv', 'bin', 'python3');
+    const venvPython = process.env.PROJECT_ROOT 
+      ? path.join(projectRoot, '.venv', 'bin', 'python3')
+      : path.join(projectRoot, '.venv', 'bin', 'python3'); // Consistent for now, but explicit for clarity
 
     let command = `"${venvPython}" "${pythonScript}" --email "${email}" --password "${password}"`;
     if (mfa) {

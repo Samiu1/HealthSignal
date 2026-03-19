@@ -7,9 +7,11 @@ const execPromise = promisify(exec);
 
 export async function GET() {
   try {
-    const projectRoot = path.resolve(process.cwd(), '..');
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(process.cwd(), '..');
     const pythonScript = path.join(projectRoot, 'check_garmin_status.py');
-    const venvPython = path.join(projectRoot, '.venv', 'bin', 'python3');
+    const venvPython = process.env.PROJECT_ROOT 
+      ? path.join(projectRoot, '.venv', 'bin', 'python3')
+      : path.join(projectRoot, '.venv', 'bin', 'python3'); // Consistent for now, but explicit for clarity
 
     console.log(`Checking Garmin session status: ${venvPython} ${pythonScript}`);
 

@@ -559,7 +559,7 @@ export default function DashboardClient({
                       <div className="text-xs font-black italic text-[var(--color-theme-primary)] uppercase tracking-widest">Charge vs Drain</div>
                     </div>
                     
-                    <div className="h-full w-full pt-16">
+                    <div className="h-full w-full pt-16 min-h-[400px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <div className="sr-only">
                           <h4>Recovery Symphony Data Description</h4>
@@ -710,7 +710,7 @@ export default function DashboardClient({
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     <TrendsCard title="Biometric Flow" icon={<Activity aria-hidden="true" />}>
-                      <div className="w-full h-full" role="img" aria-label="Area chart showing heart rate trends over the last 7 days">
+                      <div className="w-full h-[350px]" role="img" aria-label="Area chart showing heart rate trends over the last 7 days">
                         <ResponsiveContainer width="100%" height="100%">
                           <div className="sr-only">
                             <h4>Biometric Flow Data Description</h4>
@@ -745,7 +745,7 @@ export default function DashboardClient({
                     </TrendsCard>
 
                     <TrendsCard title="Stress Indices" icon={<Brain aria-hidden="true" />}>
-                      <div className="w-full h-full" role="img" aria-label="Bar chart showing average stress levels over the last 7 days">
+                      <div className="w-full h-[350px]" role="img" aria-label="Bar chart showing average stress levels over the last 7 days">
                         <ResponsiveContainer width="100%" height="100%">
                           <div className="sr-only">
                             <h4>Stress Indices Data Description</h4>
