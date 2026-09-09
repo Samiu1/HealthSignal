@@ -1,22 +1,74 @@
-# Health Signal 🌿
+# Health Signal
 
-<!-- Add project branding/logo here in the future -->
+Turn raw Garmin Connect data into a daily wellness briefing. A LangGraph
+"Council of Experts" - three specialized AI agents analyzing sleep,
+performance, and stress in parallel, then a synthesizer - produces one
+unified narrative and a 1-100 Wellness Score, served on a calm Next.js
+dashboard.
 
-Transform raw Garmin Connect data into actionable lifestyle intelligence using a **Council of Experts** parallel LangGraph architecture and a **Japandi** minimalist dashboard.
+Wearables give you metrics; they don't tell you what to do today. Health
+Signal closes that gap: every morning your last day of telemetry is fetched,
+checked against your own 7-day baseline and clinical reference ranges, and
+condensed into a short briefing - summary, prioritized insights, concrete
+recommendations, and one score.
 
-Health Signal is a personal health optimization engine. It automates the extraction of complex wearable data and uses specialized AI agents to synthesize "Signal" from "Noise," providing you with a unified narrative and a daily Wellness Score.
+![Health Signal dashboard](docs/assets/dashboard.png)
 
----
+The Analysis tab is where the council's work lands - one synthesis report
+plus each expert's read:
 
-## 🏛️ Architecture: The Council of Experts
+![Synthesis report and expert counsel](docs/assets/dashboard-analysis.png)
 
-The core of Health Signal is built on **LangGraph**, utilizing a parallel processing pattern after data ingestion. This allows specialized AI agents to analyze distinct verticals without biasing each other until the final synthesis.
+The dashboard above renders seeded sample data (the app ships with a mock
+fallback so it runs with no Garmin account); plug in credentials and the
+same pipeline runs on your real telemetry.
+
+## Quickstart
+
+**You need:** Python 3.12+, [uv](https://github.com/astral-sh/uv), Node.js
+24+, and a DeepSeek API key. A Garmin Connect account is optional - without
+one the pipeline runs on realistic mock data.
+
+```bash
+git clone https://github.com/Samiu1/HealthSignal.git && cd HealthSignal
+
+# Configure secrets
+cp .env.example .env   # set DEEPSEEK_API_KEY; Garmin creds optional
+
+# Backend: install deps and run the pipeline (last 7 days)
+uv sync
+uv run python main.py
+
+# Frontend: dashboard on http://localhost:3000
+cd web && npm ci && npm run dev
+```
+
+Or run the whole thing self-hosted in Docker (dashboard on :3067):
+
+```bash
+docker compose up -d --build
+```
+
+## What Health Signal can do
+
+| Piece | Status | What it does |
+|-------|--------|--------------|
+| Garmin ingestion | Live | Stats, sleep, activities, training readiness, respiration, SpO2, HRV, VO2 max; OAuth tokens cached in `~/.garminconnect`; each endpoint fails independently without killing the run |
+| Council of Experts | Live | Sleep, performance, and stress agents run in parallel, each prompted with clinical reference ranges and your 7-day history, each returning structured JSON |
+| Synthesizer | Live | Resolves conflicts between experts (recovery beats training streak), emits summary, insights, recommendations, and a Pydantic-validated 1-100 score |
+| Persistence | Live | SQLite upsert by date keeps the curated analysis and the raw Garmin payload, so prompts can be improved and history reprocessed without re-fetching |
+| Dashboard | Live | Next.js 16 + Tailwind 4 + Recharts; reads the database strictly read-only; falls back to demo data when empty |
+| Garmin auth + sync from the UI | Live | API routes drive the Python login, MFA/status checks, and a one-click live sync |
+| Mock-data mode | Live | No Garmin credentials - or a failed login - still produces a full briefing from realistic sample data |
+| CI/CD | Live | Ruff + frontend lint/build in CI; green builds deploy over Tailscale SSH to the self-hosted Docker host |
+| LLM output evals | Not built | See [docs/EVALUATIONS.md](docs/EVALUATIONS.md) |
+
+## How it works
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#a8c5b5', 'primaryTextColor': '#2d4a3e', 'primaryBorderColor': '#5a7a6b', 'lineColor': '#6b8f7a', 'secondaryColor': '#e8ebe6', 'tertiaryColor': '#d4dcd6' }}}%%
 graph TD
     A[START] --> B[data_ingest]
-    B --> C{Parallel Experts}
+    B --> C{Parallel experts}
     C --> D[agent_sleep]
     C --> E[agent_performance]
     C --> F[agent_stress]
@@ -25,170 +77,100 @@ graph TD
     F --> G
     G --> H[db_storage]
     H --> I[END]
-  
-    style A fill:#e8ebe6,stroke:#5a7a6b,stroke-width:1.5px
-    style I fill:#e8ebe6,stroke:#5a7a6b,stroke-width:1.5px
-    style B fill:#a8c5b5,stroke:#4a6b5a,stroke-width:1.5px
-    style C fill:#c9d9d0,stroke:#5a7a6b,stroke-width:1.5px
-    style D fill:#b8d4c8,stroke:#4a6b5a,stroke-width:1.5px
-    style E fill:#b8d4c8,stroke:#4a6b5a,stroke-width:1.5px
-    style F fill:#b8d4c8,stroke:#4a6b5a,stroke-width:1.5px
-    style G fill:#
-
 ```
 
-### The Experts
+1. `main.py` runs the graph once per day for the last 7 days (retroactive
+   Garmin corrections get picked up).
+2. `data_ingest` authenticates to Garmin Connect (cached tokens first,
+   email/password fallback) and maps raw payloads into strict Pydantic
+   models. No credentials or a failed login: realistic mock data instead.
+3. The three experts analyze in parallel. Each sees only its own vertical
+   plus the 7-day trend, so they don't bias each other.
+4. The `synthesizer` merges the three reports, flags agreement and
+   conflict, and scores the day.
+5. `db_storage` upserts everything into a single-table SQLite database that
+   the dashboard reads in read-only mode.
 
-1. **Ingestion Node**: Authenticates via Garmin Connect and structures raw payloads. If Garmin credentials fail, the system gracefully falls back to mock data for local development.
-2. **Expert Agents (Parallel)**:
-   - **Sleep Expert**: Analyzes recovery cycles, sleep score, and REM vs Deep sleep to identify deviations from your baseline.
-   - **Performance Expert**: Correlates load, active calories, and cardiovascular readiness to balance exertion and capacity.
-   - **Stress Expert**: Evaluates Body Battery depletion, HRV, and resting HR to differentiate eustress from distress.
-3. **Synthesizer Node**: Resolves conflicting advice to construct a unified narrative, prioritized insights, and a daily "Wellness Score" (0-100).
-4. **Presentation Layer**: A polished **Next.js** dashboard reflecting the Japandi design philosophy.
+Full details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); the original
+deep wiki ([docs/index.md](docs/index.md) and siblings) goes deeper on
+prompts and philosophy.
 
----
+## Quality and verification
 
-## 🛠️ Tech Stack & Tooling
+CI on every push and PR runs two jobs: backend (`ruff check` + the LLM
+connectivity test) and frontend (`eslint` + `next build`). Merges to main
+deploy automatically to the self-hosted host over Tailscale.
 
-Health Signal is divided into a Python backend for data processing and a TypeScript frontend for visualization.
+The honest gaps: `test_llm.py` is a connectivity smoke test, not a
+behavioral suite - it logs failures instead of asserting them, and there is
+no eval harness scoring analysis quality yet. What is checked, what is not,
+and the plan: [docs/EVALUATIONS.md](docs/EVALUATIONS.md).
 
-### Backend (Data Pipeline & AI)
+## Product decisions and their tradeoffs
 
-- **Language**: Python >= 3.12
-- **Environment**: `uv` package manager
-- **AI Framework**: LangGraph (`>=1.1.2`), LangChain (`>=1.2.18`) with DeepSeek
-- **Data Integration**: `garminconnect` (`>=0.2.38`)
-- **Database**: SQLite3
-- **Data Manipulation**: Pandas (`>=2.3.3`), Pydantic (`>=2.12.5`), Plotly (`>=6.6.0`)
+The short version; each decision has context and a revisit trigger in
+[docs/DECISIONS.md](docs/DECISIONS.md):
 
-### Frontend (Web Dashboard)
+| Decision | Tradeoff accepted |
+|----------|-------------------|
+| Council of Experts: parallel specialist agents | 4+ LLM calls per day instead of one |
+| DeepSeek through the OpenAI-compatible API | Provider lock-in to DeepSeek's API shape |
+| Single-table SQLite, raw payload kept | No relational queries; reprocessing is free |
+| Dashboard reads SQLite read-only | Pipeline and dashboard must share a filesystem |
+| Local-first, self-hosted Docker + Tailscale CD | No multi-user, no hosted offering |
+| Mock-data fallback everywhere | A broken Garmin login can look like a healthy pipeline |
+| Strict Pydantic models at every boundary | Schema changes touch ingest, storage, and frontend |
 
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4.0
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
-- **Database Access**: `better-sqlite3`
+## Deliberately not built
 
----
+Multi-user accounts, a hosted service, other wearable sources (Apple
+Health, Whoop, Oura), real-time streaming (the pipeline is a daily batch),
+an LLM-judged eval layer, and a mobile app. Health Signal is a personal,
+single-user engine - that scope is what keeps the data local and the
+architecture small.
 
-## 🚀 Getting Started
+## Docs
 
-Follow these steps to set up both the backend data pipeline and the frontend web dashboard.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - pipeline, council, storage, dashboard
+- [docs/EVALUATIONS.md](docs/EVALUATIONS.md) - CI inventory, honest gaps, eval plan
+- [docs/DECISIONS.md](docs/DECISIONS.md) - decision log with tradeoffs and revisit triggers
+- [CONTRIBUTING.md](CONTRIBUTING.md) - dev setup and conventions
+- [SECURITY.md](SECURITY.md) - privacy rules for health data and secrets
+- Deep wiki: [mental model](docs/index.md), [topography](docs/topography.md), [deep dives](docs/deep_dives.md), [developer playbook](docs/developer_playbook.md), [health metrics](docs/health_metrics.md)
 
-### Prerequisites
+## Commands
 
-- [Python 3.12+](https://www.python.org/downloads/)
-- [uv](https://github.com/astral-sh/uv) (for ultra-fast Python package management)
-- [Node.js 24+](https://nodejs.org/en/)
-- [pnpm](https://pnpm.io/) or `npm`
-- DeepSeek API Key (for the AI analysis)
-- Garmin Connect Account (Optional, falls back to mock data if omitted)
+| Command | Description |
+|---------|-------------|
+| `uv sync` | Install Python dependencies |
+| `uv run python main.py` | Run the pipeline for the last 7 days |
+| `uv run python fetch_live.py` | Run the pipeline for today only (what the dashboard's sync button calls) |
+| `uv run ruff check .` | Lint the backend |
+| `uv run pytest test_llm.py` | LLM connectivity smoke test (needs `DEEPSEEK_API_KEY`) |
+| `cd web && npm ci && npm run dev` | Dashboard on :3000 |
+| `cd web && npm run lint / npm run build` | Frontend checks |
+| `docker compose up -d --build` | Self-hosted run on :3067 |
 
-### 1. Clone the Repository
+## Environment variables
 
-```bash
-git clone https://github.com/your-username/health-signal.git
-cd health-signal
-```
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DEEPSEEK_API_KEY` | Yes | Powers all four agents |
+| `GARMIN_EMAIL` / `GARMIN_PASSWORD` | No | Without them the pipeline uses mock data |
+| `GARMINCONNECT_IS_CN` | No | Set true for Garmin China accounts |
+| `TOKEN_DIR` | No | OAuth token cache (default `~/.garminconnect`) |
+| `DB_PATH` | No | SQLite location (default `src/health_data.db`; set in Docker) |
+| `GARMIN_SIGN_IN_BREADCRUMBS` | No | Login-flow breadcrumbs for Docker MFA flows |
 
-### 2. Configure Environment Variables
+## Troubleshooting
 
-Create a `.env` file in the root directory. You can use `.env.example` as a template:
+**Pipeline logs a Garmin login error, then succeeds anyway** - that is the
+mock fallback working as designed. Check the log line above it for the real
+auth failure.
 
-```bash
-cp .env.example .env
-```
+**Dashboard is empty** - run the pipeline first (`uv run python main.py`),
+or use the in-app demo mode. The dashboard reads `DB_PATH` read-only and
+never creates it.
 
-| Variable              | Description                                        | Required |
-| :-------------------- | :------------------------------------------------- | :------- |
-| `DEEPSEEK_API_KEY`  | Your API key for DeepSeek.                          | Yes      |
-| `GARMIN_EMAIL`      | The email address for your Garmin Connect account. | No*      |
-| `GARMIN_PASSWORD`   | The password for your Garmin Connect account.      | No*      |
-
-*\*Note: If Garmin credentials are not provided or authentication fails, the application will automatically use mock data for safe, seamless local development.*
-
-**Garmin Token Caching:** On the first successful login, OAuth tokens are dumped into `~/.garminconnect` to avoid repeatedly hitting Garmin with hardcoded credentials.
-
-### 3. Set Up the Backend Data Pipeline
-
-Navigate to the project root and install the Python dependencies using `uv`:
-
-```bash
-uv venv
-source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-uv pip install -e .
-```
-
-### 4. Run the AI Pipeline
-
-Execute the LangGraph agent to fetch and analyze your recent Garmin health data. By default, it processes the last 7 days to capture retroactive changes.
-
-```bash
-python main.py
-```
-
-This will run the Council of Experts and populate the `src/health_data.db` SQLite database with both raw JSON payloads and structured AI analysis.
-
-### 5. Set Up the Web Dashboard
-
-Open a new terminal, navigate to the `web/` directory, and start the Next.js development server:
-
-```bash
-cd web
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser to view your personalized dashboard.
-
----
-
-## 🗺️ System Topography
-
-A brief overview of the directory structure to help you navigate the codebase:
-
-```text
-.
-├── docs/                     # Comprehensive "Deep Wiki" documentation
-├── src/                      # Python Backend (Logic & Utilities)
-│   ├── graph/                # LangGraph Core
-│   │   ├── nodes/            # Pipeline execution steps (Agents)
-│   │   ├── main.py           # Graph builder
-│   │   └── state.py          # Pydantic state definition
-│   ├── utils/                # DB, Garmin, and LLM utilities
-│   └── health_data.db        # SQLite database (Read-only for frontend)
-├── web/                      # Next.js Dashboard (Japandi Minimal)
-│   ├── src/app/              # Next.js App Router (Dashboard)
-│   └── src/components/       # UI Components & Charts
-├── main.py                   # Root entry point for the AI data pipeline
-└── pyproject.toml            # Python build configuration
-```
-
-For a deeper dive into specific components, refer to the documentation:
-
-- [**The Mental Model**](docs/index.md): Vision, core logic, and design philosophy.
-- [**System Topography**](docs/topography.md): Detailed directory rules and schema.
-- [**Logic Deep Dives**](docs/deep_dives.md): Detailed agent prompts, persistence strategies, and parallel processing logic.
-- [**Developer Playbook**](docs/developer_playbook.md): Environment setup and common workflows.
-
----
-
-## 💾 Data Persistence Strategy
-
-Health Signal uses a clean, single-table SQLite schema (`daily_health`) optimized for simple read queries from the Next.js frontend.
-
-- **Storage**: We store both the curated AI analysis and the raw Garmin JSON payload in JSON blobs. This allows the AI model to re-process historical data without needing to re-fetch from the Garmin API if prompts are improved.
-- **Upsert Logic**: The `date` column is `UNIQUE`. If the pipeline runs multiple times for the same day, we use an upsert strategy (`ON CONFLICT(date) DO UPDATE`) to regenerate the AI analysis and update the row.
-- **Access**: The frontend connects to the database in a purely Read-Only mode to prevent accidental corruption.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see the [Developer Playbook](docs/developer_playbook.md) for detailed contribution guidelines, architectural rules, and coding standards.
-
-## 📄 License
-
-This project is licensed under the MIT License.
+**Garmin rate limits** - tokens in `~/.garminconnect` are reused across
+runs; delete that directory to force a fresh login.
